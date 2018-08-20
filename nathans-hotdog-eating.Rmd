@@ -1,0 +1,90 @@
+---
+title: "nathans-hotdog-eating"
+author: "Jesse Bockstedt"
+date: "August 20, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Nathan's Hotdog Eating Contest: Time Series Bar Chart in R
+
+For ISOM 675 - Data Visualization, Goizueta Business School, Emory University
+
+Tutorial on creating well designed bar charts for time series using ggplot2 using Nathans Hot Dog Eating Contest Data. Based on the example in Nathan Yau's book Visualize This: The FlowingData Guide to Design, Visualization and Statistics (https://www.amazon.com/Visualize-This-FlowingData-Visualization-Statistics/dp/0470944889)
+
+Notes:
+1. Requires ggplot2 and extrafont R libraries
+2. Font usage depends on fonts installed on local machine
+
+# The data
+Start by loading data and viewing the head. Take a look at the variable names and types.
+```{r}
+require(ggplot2)
+#Assumes datafile is in the current working directory
+hotdogs <- read.csv('hot-dog-contest-winners.csv',sep=',', header=TRUE)
+head(hotdogs)
+
+```
+
+# Initial Plots
+
+Initial bar chart, with year on x-axis, number of hot dogs (and buns) eaten by the winner on the y-axis. Note that since the data is already aggregated, we use stat=“identity”.
+
+```{r}
+p1 <- ggplot(hotdogs, aes(x=Year, y=Dogs.eaten)) + geom_bar(stat="identity")
+p1
+```
+
+Now let’s highlight the years when a new record was set. The variable New.record is 0 if no new record is set and 1 if a new record is set.
+
+```{r}
+p1 <- ggplot(hotdogs, aes(x=Year, y=Dogs.eaten, fill=New.record)) + 
+  geom_bar(stat="identity")
+p1
+```
+
+ggplot2 interprets the values of New.record as continuous numeric instead of binary. This is why a gradient color scale legend is shown. We can fix this by casting the variable into a factor (categorical variable).
+
+```{r}
+p1 <- ggplot(hotdogs, aes(x=Year, y=Dogs.eaten, fill=factor(New.record))) + 
+  geom_bar(stat="identity")
+p1
+```
+
+# Formatting
+
+Now, let’s do some formatting on the chart. We’ll remove the legend, update the colors, update the tick marks and axis titles, add a title, a subtitle, and caption. We’ll use a gray and Nathan’s green. Note that since we are changin the fill color of the bars, we’ll use scale_fill_manual. Although Year is an integer, ggplot2 treats it as a continuous variable, so we use scale_x_continuous() and set the breaks as a sequence from 1980 to 2010 by 2. We use a similar approach for the y axis.
+
+We use the labs function to add the title, subtitle, and caption. Notice the use of line breaks in the subtitle and caption.
+
+```{r}
+p1 <- ggplot(hotdogs, aes(x=Year, y=Dogs.eaten, fill=factor(New.record))) + 
+  geom_bar(stat="identity") + 
+  scale_fill_manual(values = c("#a8a8a8", "#00572e"), guide=FALSE) +
+  scale_x_continuous("", breaks=seq(1980,2010,2)) +
+  scale_y_continuous("Hot Dogs and Buns (HDB) Eaten", breaks=seq(0,60,10)) +
+  labs(title="Hot Dog Eating", subtitle="Nathan's hot fog eating contest every July 4th has been going on since the early 1900s, \nbut it wasn't until 2001 when things got serious. Takeru Kobayashi from Japan raised the bar, \nmore than doubling the previous world record. Highlighted bars indicate new record.", caption="Data source:Wikipedia. \nPlot based on Nathan Yau's similar plot in his book Visualize This!")
+p1
+```
+
+Finally, we update our theme. We can set many different options for the theme. We can use the extrafont package to access our system fonts. You’ll need to import the fonts after you install the package (see more details here:https://github.com/wch/extrafont ). We’ll use the Georgia font in our final plot, note that you must have the Georgia font installed on your machine, if you don’t have it installed use a different font. Extrafont loads fonts from your system for use in your ggplot2 plots.
+
+We’ll also use an annotation, the position of the annotation is based on the coordinates in your plot. Note that the theme settings do not get inherited by annotations. Also note that the font size in element_text() in theme() is measured in points (like 12pt font) and in regular geom_text(), as is used in our annotation, it is measured in mm. We can use the annotate function to create both the text annotation and the line segment annotation. You can adjust the x and y locations in your annotations to reduce overlapping, depending on how you plan to output the plot.
+
+```{r}
+require(extrafont)
+loadfonts(device="win")
+```
+
+Add an annotation, edit the gridlines, and update fonts in our plot for a finished product.
+
+```{r}
+p1 + annotate("text", label="In 2001, Takeru Kobayashi gets his \nfirst win in the competition. He went on \nto win five more years in a row.", x = 1995, y = 62, size=3, family="Georgia", hjust=0, lineheight=1) +
+   annotate("segment", x=2001, y=56, xend=2001, yend=50, size=0.5 ) + 
+  theme_bw() +
+  theme(text=element_text(size=12, family="Georgia"), plot.title = element_text(size=20, face="bold"), plot.subtitle=element_text(size=10), plot.caption = element_text(size=8), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), panel.border = element_blank(), axis.line.x = element_line(colour = "black"), axis.line.y = element_blank())
+```
